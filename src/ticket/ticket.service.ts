@@ -4,54 +4,83 @@ import {
     UnauthorizedException,
   } from '@nestjs/common';
   import _ from 'lodash';
+import { Show } from './shows.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
   
   @Injectable()
   export class TicketService {
-    // 데이터베이스를 사용하지 않아 일단은 배열로 구현을 하였으니 오해 말아주세요!
-    // 보통은 TypeORM 모듈을 이용하여 리포지토리를 의존합니다. 이건 나중에 배울게요!
-    private articles = [];
-  
+    constructor(
+      @InjectRepository(Show) private showRepository: Repository<Show>
+    ) {}
+    private shows = [];
     // 게시글 비밀번호를 저장하기 위한 Map 객체입니다.
-    private articlePasswords = new Map();
+    private showPasswords = new Map();
   
-    getArticles() {
-      return this.articles;
+    async getShows() {
+      return await this.showRepository.find({
+        where: { deletedAt: null },
+        select: ["title", "content","createdAt"],
+      });
     }
   
-    getArticleById(id: number) {
-        return this.articles.find((article) => {return article.id === id});
+    async getShowById(id: number) {
+      return await this.showRepository.findOne({
+        where: { id, deletedAt: null },
+        select: ["title", "content", "createdAt", "updatedAt"],
+      });
     }
   
-    createArticle(title: string, content: string, password: number) {
-      const articleId = this.articles.length + 1;
-      this.articles.push({ id: articleId, title, content });
-      this.articlePasswords.set(articleId, password);
-      return articleId;
+    createShow(title: string, password: number, location: string, start_time: Date, end_time: Date, age: number, quantity: number, content: string,) {
+      this.showRepository.insert({
+        title,
+        content,
+        location, 
+        start_time, 
+        end_time, 
+        age, 
+        quantity,
+        password,
+      });
     }
   
-    updateArticle(id: number, title: string, content: string, password: number) {
-      if (this.articlePasswords.get(id) !== password) {
-        throw new UnauthorizedException(
-          `Article password is not correct. id: ${id}`,
-        );
+    async updateShow(id: number, title: string, password: number, location: string,
+      start_time: Date, end_time: Date, age: number, quantity: number, content: string) {
+        const show = await this.showRepository.findOne({
+          where: { id, deletedAt: null },
+          select: ["password"],
+        });
+    
+        if (_.isNil(show)) {
+          throw new NotFoundException(`show not found. id: ${id}`);
+        }
+        if (show.password !== password) {
+          throw new UnauthorizedException(
+            `show password is not correct. id: ${id}`
+          );
+        }
+    
+        this.showRepository.update(id, { title, content, location, start_time, end_time, age, quantity });
       }
   
-      const article = this.getArticleById(id);
-      if (_.isNil(article)) {
-        throw new NotFoundException(`Article not found. id: ${id}`);
+      async deleteShow(id: number, password: number) {
+        await this.checkPassword(id, password);
+        this.showRepository.softDelete(id); // soft delete를 시켜주는 것이 핵심!
       }
-  
-      article.title = title;
-      article.content = content;
-    }
-  
-    deleteArticle(id: number, password: number) {
-      if (this.articlePasswords.get(id) !== password) {
-        throw new UnauthorizedException(
-          `Article password is not correct. id: ${id}`,
-        );
+    
+      private async checkPassword(id: number, password: number) {
+        const show = await this.showRepository.findOne({
+          where: { id, deletedAt: null },
+          select: ["password"],
+        });
+        if (_.isNil(show)) {
+          throw new NotFoundException(`Show not found. id: ${id}`);
+        }
+    
+        if (show.password !== password) {
+          throw new UnauthorizedException(
+            `Show password is not correct. id: ${id}`
+          );
+        }
       }
-  
-      this.articles = this.articles.filter((article) => article.id !== id);
     }
-  }

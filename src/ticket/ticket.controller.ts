@@ -8,51 +8,62 @@ import {
     Put,
   } from '@nestjs/common';
   import { TicketService } from './ticket.service';
-  import { CreateArticleDto } from './dto/create-article.dto';
-  import { DeleteArticleDto } from './dto/delete-article.dto';
-  import { UpdateArticleDto } from './dto/update-article.dto';
+  import { CreateShowDto } from './dto/create-shows.dto';
+  import { DeleteShowDto } from './dto/delete-shows.dto';
+  import { UpdateShowDto } from './dto/update-shows.dto';
   
   @Controller('ticket')
   export class TicketController {
     constructor(private readonly ticketService: TicketService) {}
   
-    @Get('/articles')
-    getArticles() {
-      return this.ticketService.getArticles();
+    @Get('/shows')
+    async getShows() {
+      return await this.ticketService.getShows();
     }
   
-    @Get('/articles/:id')
-    getArticleById(@Param('id') articleId: number) {
-      return this.ticketService.getArticleById(articleId);
+    @Get('/shows/:id')
+    async getShowById(@Param('id') showId: number) {
+      return await this.ticketService.getShowById(showId);
     }
   
-    @Post('/articles')
-    createArticle(@Body() data: CreateArticleDto) {
-      return this.ticketService.createArticle(
+    @Post('/shows')
+    createShows(@Body() data: CreateShowDto) {
+      return this.ticketService.createShow(
         data.title,
-        data.content,
         data.password,
+        data.content, 
+        data.start_time,
+        data.end_time,
+        data.age,
+        data.quantity,
+        data.location,
       );
     }
   
-    @Put('/articles/:id')
-    updateArticle(
-      @Param('id') articleId: number,
-      @Body() data: UpdateArticleDto,
+    @Put('/shows/:id')
+    async updateShow(
+      @Param('id') showId: number,
+      @Body() data: UpdateShowDto,
     ) {
-      return this.ticketService.updateArticle(
-        articleId,
+      return await this.ticketService.updateShow(
+        showId,
         data.title,
-        data.content,
         data.password,
+        data.location,
+        data.start_time,
+        data.end_time,
+        data.age,
+        data.quantity,
+        data.content, 
+        
       );
     }
   
-    @Delete('/articles/:id')
-    deleteArticle(
-      @Param('id') articleId: number,
-      @Body() data: DeleteArticleDto,
+    @Delete('/shows/:id')
+    async deleteShow(
+      @Param('id') showId: number,
+      @Body() data: DeleteShowDto,
     ) {
-      return this.ticketService.deleteArticle(articleId, data.password);
+      return await this.ticketService.deleteShow(showId, data.password);
     }
   }
